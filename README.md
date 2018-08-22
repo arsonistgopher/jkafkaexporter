@@ -32,6 +32,20 @@ If you want to run this in the background or as a service, my advice here is to 
 
 Also, this application can also work with ssh-keys using the '-sshkey` switch which the argument is the fully qualified path to the ssh-private key. Ensure the public key has been installed on to the Junos device in question.
 
+One might wonder how the Kafka topics are created. Simple. They're automatically created from the collector name located in the [main.go](https://github.com/arsonistgopher/jkafkaexporter/blob/master/main.go#L95) file. For commit [a4977bc4dbef370b52f20a1d51e4dc94d50fd952](https://github.com/arsonistgopher/jkafkaexporter/commit/a4977bc4dbef370b52f20a1d51e4dc94d50fd952), the Kafka topics will be:
+
+* alarm
+* interfaces
+* routing-engine
+* environment
+* route
+* bgp
+* interfacediagnostics
+
+Within each topic, a record discriminator will be the identity which is passed in to the client as a command line argument (the example uses 'vmx01'). The identity appears as "Node:" within each JSON blob of data published to each Kafka topic.
+
+## Custom Collectors
+
 The collector pattern allows for easy custom creation of a collector and insertion into the application. Simply copy an existing collector, modify code and rename files to suite. Then, include the import in `main.go` at both the package import section and relevant code section. See examples below:
 
 ```go
