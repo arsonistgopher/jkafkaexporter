@@ -26,13 +26,13 @@ You can view full API documentation at GoDoc: http://godoc.org/github.com/arsoni
 
 ## Usage
 
-`./jkafkaexporter -identity vmx01 -kafkaperiod 1 -kafkaport 9092 -kafkahost localhost -password Passw0rd -username bob -sshport 22 -target 10.42.0.132`
+`./jkafkaexporter -identity vmx01 -kafkaperiod 1 -kafkahost localhost:9092 -password Passw0rd -username bob -sshport 22 -target 10.42.0.132`
 
-You can also put an ampersand after the invocation to push the application in to the background.
+If you want to run this in the background or as a service, my advice here is to put it in a Docker container (see the Dockerfile). 
 
 Also, this application can also work with ssh-keys using the '-sshkey` switch which the argument is the fully qualified path to the ssh-private key. Ensure the public key has been installed on to the Junos device in question.
 
-Currently, collectors include: alarm, environment, interfaces and routing-engine. With relative ease you should be able to create a custom collector based on the existing patterns in the aforementioned collectors. Include the import in `main.go` at both the package import section and relevant code section. See examples below:
+The collector pattern allows for easy custom creation of a collector and insertion into the application. Simply copy an existing collector, modify code and rename files to suite. Then, include the import in `main.go` at both the package import section and relevant code section. See examples below:
 
 ```go
     import (
@@ -49,6 +49,24 @@ Currently, collectors include: alarm, environment, interfaces and routing-engine
 ```
 
 In the last line of config, the "something" is also the Kafka topic.
+
+## Docker
+
+In order to build the Docker image, follow the steps below. Feel free to modify as you see fit.
+
+```bash
+docker build -f Dockerfile . -t arsonistgopher/jkafkaexporter
+docker run -d --name jkafkaexporter1 arsonistgopher/jkafkaexporter
+```
+
+You can also check Docker's logs
+```bash
+docker logs jkafkaexporter1
+```
+
+## Tutorial
+
+WIP
 
 ## Attribution
 
@@ -73,3 +91,7 @@ I intend to create a library of collectors. Right now these are somewhat limited
 ## License
 
 MIT
+
+## Disclaimer
+
+I will support this application best effort through GitHub issues and pull-requests. This application is not tied to Juniper Networks in anyway and as such, all risk is your own.

@@ -2,14 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
-
-	"log"
 
 	"github.com/arsonistgopher/jkafkaexporter/junoscollector"
 	"github.com/arsonistgopher/jkafkaexporter/kafka"
@@ -23,8 +22,6 @@ import (
 	"github.com/arsonistgopher/jkafkaexporter/collectors/interfaces"
 	"github.com/arsonistgopher/jkafkaexporter/collectors/route"
 	"github.com/arsonistgopher/jkafkaexporter/collectors/routingengine"
-
-	"github.com/google/gops/agent"
 )
 
 const version string = "00.01.00"
@@ -34,8 +31,7 @@ const version string = "00.01.00"
 var (
 	showVersion = flag.Bool("version", false, "Print version information.")
 	kafkaExport = flag.Int("kafkaperiod", 30, "Number of seconds in-between kafka exports")
-	kafkaHost   = flag.String("kafkahost", "127.0.0.1", "Host IP or FQDN of kafka bus")
-	kafkaPort   = flag.Int("kafkaport", 3000, "Port that kafka is running on")
+	kafkaHost   = flag.String("kafkahost", "127.0.0.1:9092", "Host IP or FQDN of kafka bus")
 	identity    = flag.String("identity", "vmx", "Topic for kafka export")
 	username    = flag.String("username", "kafka", "Username for kafka NETCONF SSH connection")
 	password    = flag.String("password", "kafka", "Password for kafka NETCONF SSH connection")
@@ -66,14 +62,13 @@ func main() {
 	wg := &sync.WaitGroup{}
 
 	// Setup kafkadeath channel
-	kafkadeath := make(chan bool, 1)
+	kafkadeath := make(chan struct{}, 1)
 	period := time.Duration(int64(*kafkaExport) * int64(time.Second))
 
 	// Build Kafka config from command line arguments
 	kconfig := kafka.Config{
 		KafkaExport: period,
 		KafkaHost:   *kafkaHost,
-		KafkaPort:   *kafkaPort,
 	}
 
 	// Create an sshconfig empty type so we can conditionally populate it depending on the passed in SSH config
@@ -112,7 +107,7 @@ func main() {
 	_, err := kafka.StartKafka(*identity, kconfig, c, kafkadeath, wg)
 
 	if err != nil {
-		log.Printf("Error starting kafka: %s", err)
+		fmt.Printf("Error starting kafka: %s", err)
 	}
 
 	// Loop here now and wait for death signals
@@ -120,11 +115,13 @@ func main() {
 	sigs := make(chan os.Signal, 3)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
-	// These lines are for "GOPS". Comment them out if you do not want to debug.
-	if err := agent.Listen(agent.Options{}); err != nil {
-		log.Fatal(err)
-	}
-	// End of "GOPS"
+	/*
+		// These lines are for "GOPS". Comment them out if you do not want to debug.
+		if err := agent.Listen(agent.Options{}); err != nil {
+			log.Fatal(err)
+		}
+		// End of "GOPS"
+	*/
 
 	// Create signal listener loop GR
 	for {
@@ -135,7 +132,7 @@ func main() {
 
 			if c == syscall.SIGINT || c == syscall.SIGTERM || c == syscall.SIGKILL {
 
-				kafkadeath <- true
+				kafkadeath <- struct{}{}
 				// fmt.Println("DEBUG: Waiting for sync group to be done")
 				wg.Wait()
 				os.Exit(0)

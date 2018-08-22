@@ -1,13 +1,11 @@
-FROM golang
+FROM golang:latest
 
-ENV IDENTITY="vmx01"
-ENV TOPIC="important"
-ENV PERIOD=1
-ENV KAFKAPORT=9092
-ENV KAFKAHOST="10.42.0.1"
-ENV TARGET="10.42.0.132"
+WORKDIR /go/src/app
+COPY . .
 
-RUN apt-get install -y git && \
-    go get github.com/arsonistgopher/jkafkaexporter
+RUN go get -d -v ./...
+RUN go install -v ./...
 
-CMD jkafkaexporter -identity=$IDENTITY -kafkatopic=$TOPIC -kafkaperiod=$PERIOD -kafkaport=$KAFKAPORT -kafkahost=$KAFKAHOST -password Passw0rd -username jet -sshport 22 -target=$TARGET
+#RUN go build -o main .
+
+CMD ["app", "-identity=vmx01", "-kafkahost=http://192.168.10.200:9092", "-kafkaperiod=5", "-username=jet", "-password=Passw0rd", "-target=10.47.0.132"]
